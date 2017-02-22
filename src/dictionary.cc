@@ -69,19 +69,19 @@ int64_t Dictionary::ntokens() const {
   return ntokens_;
 }
 
-const std::vector<int32_t>& Dictionary::getNgrams(int32_t i) const {
+const std::vector<int32_t>& Dictionary::getSubwords(int32_t i) const {
   assert(i >= 0);
   assert(i < nwords_);
   return words_[i].subwords;
 }
 
-const std::vector<int32_t> Dictionary::getNgrams(const std::string& word) const {
+const std::vector<int32_t> Dictionary::getSubwords(const std::string& word) const {
   int32_t i = getId(word);
   if (i >= 0) {
-    return getNgrams(i);
+    return getSubwords(i);
   }
   std::vector<int32_t> ngrams;
-  computeNgrams(BOW + word + EOW, ngrams);
+  computeSubwords(BOW + word + EOW, ngrams);
   return ngrams;
 }
 
@@ -118,29 +118,11 @@ uint32_t Dictionary::hash(const std::string& str) const {
   return h;
 }
 
-void Dictionary::computeNgrams(const std::string& word,
-                               std::vector<int32_t>& ngrams) const {
-  for (size_t i = 0; i < word.size(); i++) {
-    std::string ngram;
-    if ((word[i] & 0xC0) == 0x80) continue;
-    for (size_t j = i, n = 1; j < word.size() && n <= args_->maxn; n++) {
-      ngram.push_back(word[j++]);
-      while (j < word.size() && (word[j] & 0xC0) == 0x80) {
-        ngram.push_back(word[j++]);
-      }
-      if (n >= args_->minn && !(n == 1 && (i == 0 || j == word.size()))) {
-        int32_t h = hash(ngram) % args_->bucket;
-        ngrams.push_back(nwords_ + h);
-      }
-    }
-  }
-}
-
-void Dictionary::initNgrams() {
+void Dictionary::initSubwords() {
   for (size_t i = 0; i < size_; i++) {
     std::string word = BOW + words_[i].word + EOW;
     words_[i].subwords.push_back(i);
-    computeNgrams(word, words_[i].subwords);
+    computeSubwords(word, words_[i].subwords);
   }
 }
 
@@ -185,7 +167,7 @@ void Dictionary::readFromFile(std::istream& in) {
   }
   threshold(args_->minCount, args_->minCountLabel);
   initTableDiscard();
-  initNgrams();
+  initSubwords();
   if (args_->verbose > 0) {
     std::cout << "\rRead " << ntokens_  / 1000000 << "M words" << std::endl;
     std::cout << "Number of words:  " << nwords_ << std::endl;
@@ -237,7 +219,7 @@ std::vector<int64_t> Dictionary::getCounts(entry_type type) const {
   return counts;
 }
 
-void Dictionary::addNgrams(std::vector<int32_t>& line, int32_t n) const {
+void Dictionary::addSubwords(std::vector<int32_t>& line, int32_t n) const {
   int32_t line_size = line.size();
   for (int32_t i = 0; i < line_size; i++) {
     uint64_t h = line[i];
@@ -319,7 +301,7 @@ void Dictionary::load(std::istream& in) {
     word2int_[find(e.word)] = i;
   }
   initTableDiscard();
-  initNgrams();
+  initSubwords();
 }
 
 }

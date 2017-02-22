@@ -33,13 +33,13 @@ struct entry {
 };
 
 class Dictionary {
-  private:
+  protected:
     static const int32_t MAX_VOCAB_SIZE = 30000000;
     static const int32_t MAX_LINE_SIZE = 1024;
 
     int32_t find(const std::string&) const;
     void initTableDiscard();
-    void initNgrams();
+    void initSubwords();
 
     std::shared_ptr<Args> args_;
     std::vector<int32_t> word2int_;
@@ -63,9 +63,9 @@ class Dictionary {
     entry_type getType(int32_t) const;
     bool discard(int32_t, real) const;
     std::string getWord(int32_t) const;
-    const std::vector<int32_t>& getNgrams(int32_t) const;
-    const std::vector<int32_t> getNgrams(const std::string&) const;
-    void computeNgrams(const std::string&, std::vector<int32_t>&) const;
+    const std::vector<int32_t>& getSubwords(int32_t) const;
+    const std::vector<int32_t> getSubwords(const std::string&) const;
+    virtual void computeSubwords(const std::string&, std::vector<int32_t>&) const = 0;
     uint32_t hash(const std::string& str) const;
     void add(const std::string&);
     bool readWord(std::istream&, std::string&) const;
@@ -74,7 +74,7 @@ class Dictionary {
     void save(std::ostream&) const;
     void load(std::istream&);
     std::vector<int64_t> getCounts(entry_type) const;
-    void addNgrams(std::vector<int32_t>&, int32_t) const;
+    void addSubwords(std::vector<int32_t>&, int32_t) const;
     int32_t getLine(std::istream&, std::vector<int32_t>&,
                     std::vector<int32_t>&, std::minstd_rand&) const;
     void threshold(int64_t, int64_t);
