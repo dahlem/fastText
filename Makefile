@@ -9,7 +9,7 @@
 
 CXX = c++
 CXXFLAGS = -pthread -std=c++0x
-OBJS = args.o dictionary.o matrix.o vector.o model.o utils.o fasttext.o
+OBJS = args.o dictionary.o NGram.o LZ.o matrix.o vector.o model.o utils.o fasttext.o
 INCLUDES = -I.
 
 opt: CXXFLAGS += -O3 -funroll-loops
@@ -23,6 +23,12 @@ args.o: src/args.cc src/args.h
 
 dictionary.o: src/dictionary.cc src/dictionary.h src/args.h
 	$(CXX) $(CXXFLAGS) -c src/dictionary.cc
+
+NGram.o: src/NGram.cc src/NGram.h src/dictionary.h
+	$(CXX) $(CXXFLAGS) -c src/NGram.cc
+
+LZ.o: src/LZ.cc src/LZ.h src/dictionary.h
+	$(CXX) $(CXXFLAGS) -c src/LZ.cc
 
 matrix.o: src/matrix.cc src/matrix.h src/utils.h
 	$(CXX) $(CXXFLAGS) -c src/matrix.cc
