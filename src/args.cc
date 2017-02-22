@@ -36,6 +36,7 @@ Args::Args() {
   label = "__label__";
   verbose = 2;
   pretrainedVectors = "";
+  subword = subword_type::ngram;
 }
 
 void Args::parseArgs(int argc, char** argv) {
@@ -113,6 +114,16 @@ void Args::parseArgs(int argc, char** argv) {
       verbose = atoi(argv[ai + 1]);
     } else if (strcmp(argv[ai], "-pretrainedVectors") == 0) {
       pretrainedVectors = std::string(argv[ai + 1]);
+    } else if (strcmp(argv[ai], "-subword") == 0) {
+        if (strcmp(argv[ai + 1], "gram") == 0) {
+            subword = subword_type::ngram;
+        } else if (strcmp(argv[ai + 1], "lz") == 0) {
+            subword = subword_type::lz;
+        } else {
+            std::cout << "Unknown subword type: " << argv[ai + 1] << std::endl;
+            printHelp();
+            exit(EXIT_FAILURE);
+        }
     } else {
       std::cout << "Unknown argument: " << argv[ai] << std::endl;
       printHelp();

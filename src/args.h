@@ -18,6 +18,7 @@ namespace fasttext {
 
 enum class model_name : int {cbow=1, sg, sup};
 enum class loss_name : int {hs=1, ns, softmax};
+enum class subword_type : int {ngram=1, lz};
 
 class Args {
   public:
@@ -44,6 +45,7 @@ class Args {
     std::string label;
     int verbose;
     std::string pretrainedVectors;
+    subword_type subword;
 
     void parseArgs(int, char**);
     void printHelp();
