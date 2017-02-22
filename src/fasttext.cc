@@ -8,6 +8,8 @@
  */
 
 #include "fasttext.h"
+#include "NGram.h"
+#include "LZ.h"
 
 #include <math.h>
 
@@ -20,8 +22,12 @@
 
 namespace fasttext {
 
+FastText::FastText() {
+    
+}
+    
 void FastText::getVector(Vector& vec, const std::string& word) {
-  const std::vector<int32_t>& ngrams = dict_->getNgrams(word);
+  const std::vector<int32_t>& ngrams = dict_->getSubwords(word);
   vec.zero();
   for (auto it = ngrams.begin(); it != ngrams.end(); ++it) {
     vec.addRow(*input_, *it);
@@ -72,7 +78,11 @@ void FastText::loadModel(const std::string& filename) {
 
 void FastText::loadModel(std::istream& in) {
   args_ = std::make_shared<Args>();
-  dict_ = std::make_shared<Dictionary>(args_);
+  if (args_->subword == subword_type::ngram) {
+      dict_ = std::make_shared<NGram>(args_);
+  } else {
+      dict_ = std::make_shared<LZ>(args_);
+  }
   input_ = std::make_shared<Matrix>();
   output_ = std::make_shared<Matrix>();
   args_->load(in);
@@ -121,7 +131,7 @@ void FastText::cbow(Model& model, real lr,
     bow.clear();
     for (int32_t c = -boundary; c <= boundary; c++) {
       if (c != 0 && w + c >= 0 && w + c < line.size()) {
-        const std::vector<int32_t>& ngrams = dict_->getNgrams(line[w + c]);
+        const std::vector<int32_t>& ngrams = dict_->getSubwords(line[w + c]);
         bow.insert(bow.end(), ngrams.cbegin(), ngrams.cend());
       }
     }
@@ -134,7 +144,7 @@ void FastText::skipgram(Model& model, real lr,
   std::uniform_int_distribution<> uniform(1, args_->ws);
   for (int32_t w = 0; w < line.size(); w++) {
     int32_t boundary = uniform(model.rng);
-    const std::vector<int32_t>& ngrams = dict_->getNgrams(line[w]);
+    const std::vector<int32_t>& ngrams = dict_->getSubwords(line[w]);
     for (int32_t c = -boundary; c <= boundary; c++) {
       if (c != 0 && w + c >= 0 && w + c < line.size()) {
         model.update(ngrams, line[w + c], lr);
@@ -150,7 +160,7 @@ void FastText::test(std::istream& in, int32_t k) {
 
   while (in.peek() != EOF) {
     dict_->getLine(in, line, labels, model_->rng);
-    dict_->addNgrams(line, args_->wordNgrams);
+    dict_->addSubwords(line, args_->wordNgrams);
     if (labels.size() > 0 && line.size() > 0) {
       std::vector<std::pair<real, int32_t>> modelPredictions;
       model_->predict(line, k, modelPredictions);
@@ -173,7 +183,7 @@ void FastText::predict(std::istream& in, int32_t k,
                        std::vector<std::pair<real,std::string>>& predictions) const {
   std::vector<int32_t> words, labels;
   dict_->getLine(in, words, labels, model_->rng);
-  dict_->addNgrams(words, args_->wordNgrams);
+  dict_->addSubwords(words, args_->wordNgrams);
   if (words.empty()) return;
   Vector hidden(args_->dim);
   Vector output(dict_->nlabels());
@@ -220,7 +230,7 @@ void FastText::textVectors() {
   Vector vec(args_->dim);
   while (std::cin.peek() != EOF) {
     dict_->getLine(std::cin, line, labels, model_->rng);
-    dict_->addNgrams(line, args_->wordNgrams);
+    dict_->addSubwords(line, args_->wordNgrams);
     vec.zero();
     for (auto it = line.cbegin(); it != line.cend(); ++it) {
       vec.addRow(*input_, *it);
@@ -259,7 +269,7 @@ void FastText::trainThread(int32_t threadId) {
     real lr = args_->lr * (1.0 - progress);
     localTokenCount += dict_->getLine(ifs, line, labels, model.rng);
     if (args_->model == model_name::sup) {
-      dict_->addNgrams(line, args_->wordNgrams);
+      dict_->addSubwords(line, args_->wordNgrams);
       supervised(model, lr, line, labels);
     } else if (args_->model == model_name::cbow) {
       cbow(model, lr, line);
@@ -323,7 +333,11 @@ void FastText::loadVectors(std::string filename) {
 
 void FastText::train(std::shared_ptr<Args> args) {
   args_ = args;
-  dict_ = std::make_shared<Dictionary>(args_);
+  if (args_->subword == subword_type::ngram) {
+      dict_ = std::make_shared<NGram>(args_);
+  } else {
+      dict_ = std::make_shared<LZ>(args_);
+  }
   if (args_->input == "-") {
     // manage expectations
     std::cerr << "Cannot use stdin for training!" << std::endl;
