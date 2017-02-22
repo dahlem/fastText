@@ -115,7 +115,7 @@ void Args::parseArgs(int argc, char** argv) {
     } else if (strcmp(argv[ai], "-pretrainedVectors") == 0) {
       pretrainedVectors = std::string(argv[ai + 1]);
     } else if (strcmp(argv[ai], "-subword") == 0) {
-        if (strcmp(argv[ai + 1], "gram") == 0) {
+        if (strcmp(argv[ai + 1], "ngram") == 0) {
             subword = subword_type::ngram;
         } else if (strcmp(argv[ai + 1], "lz") == 0) {
             subword = subword_type::lz;
